@@ -25,6 +25,21 @@ func DrawBase(grid [][]rune){
 	for x := start; x <= end; x++ {
 		grid[27][x] = '_'
 	}
+
+	
+	i := 1
+	for y:= 27; y >= 25; y--{
+		for x:= start - i; x <= end + i; x++{
+			if x == start - i {
+				grid[y][x] = '\\'
+			}
+			if x == end + i {
+				grid[y][x] = '/'
+			}
+		}
+		i += 1
+	}
+
 }
 
 func DrawGrid(){

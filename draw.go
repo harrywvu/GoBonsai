@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand/v2"	
+)
 
 const (
 	WIDTH = 100
@@ -9,15 +12,20 @@ const (
 	V_CEMTER int = HEIGHT / 2
 
 	BASE_FLAT_LENGTH int = 25
+
+	Reset  = "\033[0m"
+	Green  = "\033[32m"
+	White  = "\033[37m"
+
+	
 )
 
 func DrawBase(grid [][]rune){
 	//
-	//	\                             /
+	//	\_.^._~~..___..^..~~...***-_--/
 	//	 \							 /
 //		  \_________________________/
 //			--					 --
-	
 
 	start := H_CENTER - BASE_FLAT_LENGTH/2
 	end := H_CENTER + BASE_FLAT_LENGTH/2
@@ -25,6 +33,11 @@ func DrawBase(grid [][]rune){
 	for x := start; x <= end; x++ {
 		grid[27][x] = '_'
 	}
+
+	grid[28][39] = '-'
+	grid[28][40] = '-'
+	grid[28][61] = '-'
+	grid[28][60] = '-'
 
 	
 	i := 1
@@ -38,6 +51,12 @@ func DrawBase(grid [][]rune){
 			}
 		}
 		i += 1
+	}
+
+	chars := []rune{'.', ',', '~', '-', '_', '*', '^'}
+
+	for x := start - 2; x <= end + 2; x++{
+		grid[25][x] = chars[rand.IntN(len(chars))]
 	}
 
 }

@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/rand/v2"	
+	"math/rand/v2"
+	"math"	
 )
 
 type Window struct{
@@ -67,4 +68,11 @@ func (w *Window) Render(){
 	for _, row := range w.grid {
 		fmt.Println(string(row))
 	}
+}
+
+func getEnd(col, row int, length float64, angleDegrees float64) (int, int) {
+    rad := angleDegrees * math.Pi / 180
+    endCol := col + int(math.Round(length * math.Sin(rad)))
+    endRow := row - int(math.Round(length * math.Cos(rad)))
+    return endCol, endRow
 }

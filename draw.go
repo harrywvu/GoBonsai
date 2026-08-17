@@ -86,7 +86,18 @@ func (w *Window) Render(){
 
 func getEnd(x,y float64, length float64, angleDegrees float64) (float64, float64) {
     rad := angleDegrees * math.Pi / 180
-    endCol := x + math.Round(length * math.Sin(rad))
-    endRow := y - math.Round(length * math.Cos(rad))
-    return endCol, endRow
+    endX := x + length * math.Sin(rad)
+    endY := y + length * math.Cos(rad)
+    return endX, endY
+}
+
+func (w *Window) increaseHeight (delta int) {
+	for i := 0; i < delta; i++ {
+		row := make([]rune, w.Width)
+		for j := range row {
+			row[j] = ' '
+		}
+		w.grid = append([][]rune{row}, w.grid...)	
+	}
+	w.Height += delta
 }

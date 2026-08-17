@@ -78,6 +78,15 @@ func (w *Window) SetChar(row, col int, ch rune){
 	}
 }
 
+func (w* Window) SetCharPlane(x, y float64, ch rune) {
+	row, col := w.planeToScreen(x, y)
+	if row < 0 {
+		w.increaseHeight(-row)
+		row = 0
+	}
+	w.SetChar(row, col, ch)
+}
+
 func (w *Window) Render(){
 	for _, row := range w.grid {
 		fmt.Println(string(row))

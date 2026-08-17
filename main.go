@@ -4,12 +4,13 @@ func main() {
     w := NewWindow(80, 25)
     DrawBase(w, 40)
 
-    trunkCol, trunkRow := 40, 22
-    topCol, topRow := getEnd(trunkCol, trunkRow, 8, 0)
+    startX, startY := 40.0, 8.0
+    endX, endY := getEnd(startX, startY, 8, 0)
 
-    for r := trunkRow; r >= topRow; r-- {
-        w.SetChar(r, topCol, '|')
+    for y := startY; y <= endY; y++ {
+        w.SetCharPlane(startX, y, '|')
     }
 
     w.Render()
+
 }

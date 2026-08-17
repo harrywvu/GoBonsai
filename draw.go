@@ -25,7 +25,19 @@ func NewWindow(w, h int) *Window{
 
 const (
 	BASE_FLAT_LENGTH int = 25
+	CHAR_HEIGHT = 2
+	CHAR_WIDTH = 1
 )
+
+func (w Window) planeToScreen(x,y float64) (row, col int){
+	row = round(w.Height - y / CHAR_HEIGHT) // y/2 because 1 unit = 2 rows
+	col = round(x / CHAR_WIDTH)				// x/1 because 1 unit = 1 column
+}
+
+func (w Window) screenToPlane(row, col int) (x,y float64){
+	x = col * CHAR_WIDTH
+	y = (w.Height - row) * CHAR_HEIGHT
+}
 
 func DrawBase(w *Window, centerCol int){
 	half := BASE_FLAT_LENGTH / 2
@@ -70,9 +82,9 @@ func (w *Window) Render(){
 	}
 }
 
-func getEnd(col, row int, length float64, angleDegrees float64) (int, int) {
-    rad := angleDegrees * math.Pi / 180
-    endCol := col + int(math.Round(length * math.Sin(rad)))
-    endRow := row - int(math.Round(length * math.Cos(rad)))
-    return endCol, endRow
-}
+// func getEnd(col, row int, length float64, angleDegrees float64) (int, int) {
+//     rad := angleDegrees * math.Pi / 180
+//     endCol := col + int(math.Round(length * math.Sin(rad)))
+//     endRow := row - int(math.Round(length * math.Cos(rad)))
+//     return endCol, endRow
+// }

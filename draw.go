@@ -30,14 +30,14 @@ const (
 )
 
 func (w Window) planeToScreen(x,y float64) (row, col int){
-	row = math.Round(w.Height - y / CHAR_HEIGHT) // y/2 because 1 unit = 2 rows
-	col = math.Round(x / CHAR_WIDTH)				// x/1 because 1 unit = 1 column
+	row = int(math.Round(float64(w.Height) - y / CHAR_HEIGHT)) // y/2 because 1 unit = 2 rows
+	col = int(math.Round(x / CHAR_WIDTH))				// x/1 because 1 unit = 1 column
 	return int(row), int(col)
 }
 
 func (w Window) screenToPlane(row, col int) (x,y float64){
-	x = col * CHAR_WIDTH
-	y = (w.Height - row) * CHAR_HEIGHT
+	x = float64(col) * CHAR_WIDTH
+	y = float64(w.Height - row) * CHAR_HEIGHT
 	return x, y
 }
 

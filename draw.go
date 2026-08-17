@@ -30,13 +30,15 @@ const (
 )
 
 func (w Window) planeToScreen(x,y float64) (row, col int){
-	row = round(w.Height - y / CHAR_HEIGHT) // y/2 because 1 unit = 2 rows
-	col = round(x / CHAR_WIDTH)				// x/1 because 1 unit = 1 column
+	row = math.Round(w.Height - y / CHAR_HEIGHT) // y/2 because 1 unit = 2 rows
+	col = math.Round(x / CHAR_WIDTH)				// x/1 because 1 unit = 1 column
+	return int(row), int(col)
 }
 
 func (w Window) screenToPlane(row, col int) (x,y float64){
 	x = col * CHAR_WIDTH
 	y = (w.Height - row) * CHAR_HEIGHT
+	return x, y
 }
 
 func DrawBase(w *Window, centerCol int){
@@ -82,9 +84,9 @@ func (w *Window) Render(){
 	}
 }
 
-// func getEnd(col, row int, length float64, angleDegrees float64) (int, int) {
-//     rad := angleDegrees * math.Pi / 180
-//     endCol := col + int(math.Round(length * math.Sin(rad)))
-//     endRow := row - int(math.Round(length * math.Cos(rad)))
-//     return endCol, endRow
-// }
+func getEnd(x,y float64, length float64, angleDegrees float64) (float64, float64) {
+    rad := angleDegrees * math.Pi / 180
+    endCol := x + math.Round(length * math.Sin(rad))
+    endRow := y - math.Round(length * math.Cos(rad))
+    return endCol, endRow
+}

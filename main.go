@@ -2,32 +2,40 @@ package main
 
 import (
 	"os"
+	"golang.org/x/term"
 )
 
 func main() {
 	args := os.Args[1:]
 	options := getOptions(args)
 
-	width, height := defaultWindowSize()
-	width = min(width, options.WindowWidth)
-	height = min(height, options.WindowHeight)
+	// Set up window sized for the terminal, clamped to defaults
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		wTerm, h, err := term.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			options.WindowWidth = min(wTerm, 80)
+			options.WindowHeight = min(h, 25)
+		}
+	}
 
 	w := NewWindow(options.WindowWidth, options.WindowHeight, options)
 
-	// Draw a simple ground base
-	groundRow := w.height - 3
-	start := 40 - 25
-	end := 40 + 25
-
-	for x := start; x <= end; x++ {
-		w.SetCharPlane(float64(groundRow), float64(x), '_', fixedColour(200, 150, 0))
+	// Get a tree based on the selected type
+	switch options.Type {
+	case 0:
+		t := newClassicTree(w, Point{float64(options.WindowWidth)/2, float64(boxHeight+4)}, options)
+		t.draw()
+	case 1:
+		t := newFibTree(w, Point{float64(options.WindowWidth)/2, float64(boxHeight+4)}, options)
+		t.draw()
+	case 2:
+		t := newOffsetFibTree(w, Point{float64(options.WindowWidth)/2, float64(boxHeight+4)}, options)
+		t.draw()
+	default:
+		t := newRandomOffsetFibTree(w, Point{float64(options.WindowWidth)/2, float64(boxHeight+4)}, options)
+		t.draw()
 	}
 
-	// Draw a simple trunk column
-	for y := float64(groundRow + 1); y <= float64(groundRow+3); y++ {
-		w.SetCharPlane(float64(40), y, '|', fixedColour(200, 200, 200))
-	}
-
+	// Render to terminal and reset cursor
 	w.Draw()
-	w.ResetCursor()
 }

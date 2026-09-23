@@ -15,21 +15,21 @@ func (p Point) Scale(s float64) Point {
 }
 
 func (p Point) Mag() float64 {
-	return math.Hypot(p.X, p.Y)
+	return math.Pow(p.X*p.X+p.Y*p.Y, 0.5)
 }
 
-func (p *Point) Normalise() {
+func (p Point) Normalise() Point {
 	m := p.Mag()
 	if m > 0 {
-		p.X /= m
-		p.Y /= m
+		return Point{p.X / m, p.Y / m}
 	}
+	return p
 }
 
 type Line struct {
-	Start, End  Point
-	M, C        float64
-	IsVertical  bool
+	Start, End Point
+	M, C       float64
+	IsVertical bool
 }
 
 func (l *Line) SetEndPoints(start, end Point) {

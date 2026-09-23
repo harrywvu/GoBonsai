@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand/v2"
 	"os"
 	"strconv"
 	"time"
@@ -12,34 +11,34 @@ import (
 )
 
 const (
-	defaultNumLayers   = 8
-	defaultInitialLen  = 15
-	defaultAngleDeg      = 40.0
-	defaultLeafLen       = 4
-	defaultWaitTime      = 0.0
-	defaultBranchChars   = "~;:= "
-	defaultLeafChars     = "&%#@ "
-	defaultWindowWidth   = 80
-	defaultWindowHeight  = 25
-	version              = "1.0.0"
-	desc                 = "GoBonsai procedurally generates ASCII art trees in your terminal."
+	defaultNumLayers    = 8
+	defaultInitialLen   = 15
+	defaultAngleDeg     = 40.0
+	defaultLeafLen      = 4
+	defaultWaitTime     = 0.0
+	defaultBranchChars  = "~;:="
+	defaultLeafChars    = "&%#@"
+	defaultWindowWidth  = 80
+	defaultWindowHeight = 25
+	version             = "1.0.0"
+	desc                = "GoBonsai procedurally generates ASCII art trees in your terminal."
 )
 
-var rng = rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), uint64(os.Getpid())))
+var rng = newPythonRandom(time.Now().UnixNano() ^ int64(os.Getpid()))
 
 type Options struct {
-	NumLayers   int
-	InitialLen  int
-	AngleMean   float64
-	LeafLen     int
-	Instant     bool
-	WaitTime    float64
-	BranchChars string
-	LeafChars   string
-	Type        int
-	UserSetType bool
-	FixedWindow bool
-	WindowWidth int
+	NumLayers    int
+	InitialLen   int
+	AngleMean    float64
+	LeafLen      int
+	Instant      bool
+	WaitTime     float64
+	BranchChars  string
+	LeafChars    string
+	Type         int
+	UserSetType  bool
+	FixedWindow  bool
+	WindowWidth  int
 	WindowHeight int
 }
 
@@ -64,15 +63,15 @@ func defaultOptions() *Options {
 	width, height := defaultWindowSize()
 
 	return &Options{
-		NumLayers:   defaultNumLayers,
-		InitialLen:  defaultInitialLen,
-		AngleMean:   defaultAngleDeg * math.Pi / 180,
-		LeafLen:     defaultLeafLen,
-		WaitTime:    defaultWaitTime,
-		BranchChars: defaultBranchChars,
-		LeafChars:   defaultLeafChars,
-		Type:        rng.IntN(4),
-		WindowWidth: width,
+		NumLayers:    defaultNumLayers,
+		InitialLen:   defaultInitialLen,
+		AngleMean:    defaultAngleDeg * math.Pi / 180,
+		LeafLen:      defaultLeafLen,
+		WaitTime:     defaultWaitTime,
+		BranchChars:  defaultBranchChars,
+		LeafChars:    defaultLeafChars,
+		Type:         rng.IntN(4),
+		WindowWidth:  width,
 		WindowHeight: height,
 	}
 }
@@ -86,6 +85,16 @@ type arg struct {
 
 func parseArgs(args []string) []arg {
 	var parsed []arg
+	positions := make(map[string]int)
+
+	add := func(name, value string) {
+		if i, ok := positions[name]; ok {
+			parsed[i].value = value
+			return
+		}
+		positions[name] = len(parsed)
+		parsed = append(parsed, arg{name, value})
+	}
 
 	for i, x := range args {
 		if len(x) == 0 || x[0] != '-' {
@@ -96,12 +105,12 @@ func parseArgs(args []string) []arg {
 
 		if len(x) > 2 && x[1] != '-' {
 			for _, c := range x[1:] {
-				parsed = append(parsed, arg{"-" + string(c), value})
+				add("-"+string(c), value)
 			}
 			continue
 		}
 
-		parsed = append(parsed, arg{x, value})
+		add(x, value)
 	}
 
 	return parsed
@@ -230,7 +239,7 @@ func stripQuotes(s string) string {
 }
 
 func setSeed(options *Options, seed int) {
-	rng = rand.New(rand.NewPCG(uint64(int64(seed)), 0))
+	rng.Seed(int64(seed))
 
 	if !options.UserSetType {
 		options.Type = rng.IntN(4)

@@ -5,16 +5,16 @@ import (
 )
 
 const (
-	boxHeight           = 3
-	maxTopWidth         = 35
-	moundThreshold      = 0.1
-	soilCharThreshold   = 0.1
-	soilChars           = ".~*"
-	moundWidthMean      = 2.0
-	moundWidthStdDev    = 1.0
+	boxHeight         = 3
+	maxTopWidth       = 35
+	moundThreshold    = 0.1
+	soilCharThreshold = 0.1
+	soilChars         = ".~*"
+	moundWidthMean    = 2.0
+	moundWidthStdDev  = 1.0
 
-	angleStdDev   = 8 * math.Pi / 180
-	lenScale      = 0.75
+	angleStdDev     = 8 * math.Pi / 180
+	lenScale        = 0.75
 	maxInitialWidth = 6
 
 	meanBranches   = 2.0
@@ -152,16 +152,16 @@ func (t *Tree) DrawTreeBase(trunkWidth int) {
 type RecursiveTree struct {
 	Tree
 
-	angleStdDev   float64
-	lenScale      float64
+	angleStdDev     float64
+	lenScale        float64
 	maxInitialWidth int
 }
 
 func newRecursiveTree(window *Window, root Point, options *Options) RecursiveTree {
 	return RecursiveTree{
-		Tree:          newTree(window, root, options),
-		angleStdDev:   angleStdDev,
-		lenScale:      lenScale,
+		Tree:            newTree(window, root, options),
+		angleStdDev:     angleStdDev,
+		lenScale:        lenScale,
 		maxInitialWidth: maxInitialWidth,
 	}
 }
@@ -201,6 +201,15 @@ func (t *ClassicTree) drawBranch(p Point, layer int, length, width, theta float6
 	t.drawEndBranches(p, layer, length, width, theta)
 }
 
+func (t *ClassicTree) draw() {
+	initialWidth, initialAngle := t.initialParams()
+
+	t.drawBox()
+	t.DrawTreeBase(initialWidth)
+
+	t.drawBranch(t.root, 1, float64(t.options.InitialLen), float64(initialWidth), initialAngle)
+}
+
 func (t *ClassicTree) drawEndBranches(start Point, layer int, length, width, theta float64) {
 	sign := 1.0
 	numBranches := max(roundEven(rng.NormFloat64()*branchesStdDev+meanBranches), 0)
@@ -230,6 +239,10 @@ type fibTree struct {
 
 	fib        []int
 	branchNums [][]int
+}
+
+type fibBrancher interface {
+	drawEndBranches(start Point, layerInx, branchInx int, length, width, theta float64)
 }
 
 func newFibTree(window *Window, root Point, options *Options) *fibTree {
@@ -283,7 +296,7 @@ func shuffle(arr []int) {
 	}
 }
 
-func (t *fibTree) drawBranch(p Point, layerInx, branchInx int, length, width, theta float64) {
+func (t *fibTree) drawBranch(brancher fibBrancher, p Point, layerInx, branchInx int, length, width, theta float64) {
 	if layerInx > t.options.NumLayers {
 		drawLeaves(t.window, p, t.options)
 		return
@@ -293,22 +306,34 @@ func (t *fibTree) drawBranch(p Point, layerInx, branchInx int, length, width, th
 
 	t.window.DrawLine(p, end, branchColour, roundEven(width))
 
-	t.drawEndBranches(p, layerInx, branchInx, length, width, theta)
+	brancher.drawEndBranches(p, layerInx, branchInx, length, width, theta)
+}
+
+func (t *fibTree) draw() {
+	t.drawWith(t)
+}
+
+func (t *fibTree) drawWith(brancher fibBrancher) {
+	initialWidth, initialAngle := t.initialParams()
+
+	t.drawBox()
+	t.DrawTreeBase(initialWidth)
+
+	t.drawBranch(brancher, t.root, 1, 0, float64(t.options.InitialLen), float64(initialWidth), initialAngle)
 }
 
 func (t *fibTree) drawEndBranches(start Point, layerInx, branchInx int, length, width, theta float64) {
 	sign := 1.0
 	numBranches := t.branchNums[layerInx][branchInx]
 	newWidth := max(width-1, 1)
+	p := t.getEndCoords(start, length, theta)
 
 	for i := range numBranches {
 		angle := rng.NormFloat64()*t.angleStdDev + t.options.AngleMean
 		newTheta := theta + sign*angle
 		newLength := length * t.lenScale
 
-		p := t.getEndCoords(start, float64(i+1)*length/float64(numBranches), theta)
-
-		t.drawBranch(p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
+		t.drawBranch(t, p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
 
 		sign *= -1
 	}
@@ -323,12 +348,7 @@ func newOffsetFibTree(window *Window, root Point, options *Options) *OffsetFibTr
 }
 
 func (t *OffsetFibTree) draw() {
-	initialWidth, initialAngle := t.initialParams()
-
-	t.drawBox()
-	t.DrawTreeBase(initialWidth)
-
-	t.drawBranch(t.root, 1, 0, float64(t.options.InitialLen), float64(initialWidth), initialAngle)
+	t.fibTree.drawWith(t)
 }
 
 func (t *OffsetFibTree) drawEndBranches(start Point, layerInx, branchInx int, length, width, theta float64) {
@@ -349,7 +369,7 @@ func (t *OffsetFibTree) drawEndBranches(start Point, layerInx, branchInx int, le
 
 		p := t.getEndCoords(start, distUpBranch, theta)
 
-		t.drawBranch(p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
+		t.fibTree.drawBranch(t, p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
 
 		sign *= -1
 	}
@@ -364,12 +384,7 @@ func newRandomOffsetFibTree(window *Window, root Point, options *Options) *Rando
 }
 
 func (t *RandomOffsetFibTree) draw() {
-	initialWidth, initialAngle := t.initialParams()
-
-	t.drawBox()
-	t.DrawTreeBase(initialWidth)
-
-	t.drawBranch(t.root, 1, 0, float64(t.options.InitialLen), float64(initialWidth), initialAngle)
+	t.fibTree.drawWith(t)
 }
 
 func (t *RandomOffsetFibTree) drawEndBranches(start Point, layerInx, branchInx int, length, width, theta float64) {
@@ -379,25 +394,18 @@ func (t *RandomOffsetFibTree) drawEndBranches(start Point, layerInx, branchInx i
 	newWidth := max(width-1, 1)
 	newLength := length * t.lenScale
 
-	_ = branchInx // silence unused variable check in loop below
 	needLeaves := true
-	var distUpBranch float64
 	for i := range numBranches {
-		_ = i // explicitly use loop variable
-		growAtEnd := rng.Float64() < growEndThreshold
-
+		distUpBranch, growAtEnd := randomOffsetDistance(length)
 		if growAtEnd {
 			needLeaves = false
-		} else {
-			distUpBranch = rng.Float64()*(nonEndMax-nonEndMin) + nonEndMin
-			distUpBranch *= length
 		}
 
 		newTheta := theta + sign*(rng.NormFloat64()*t.angleStdDev+t.options.AngleMean)
 
 		p := t.getEndCoords(start, distUpBranch, theta)
 
-		t.drawBranch(p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
+		t.fibTree.drawBranch(t, p, layerInx+1, branchInx+i, newLength, newWidth, newTheta)
 
 		sign *= -1
 	}
@@ -408,10 +416,20 @@ func (t *RandomOffsetFibTree) drawEndBranches(start Point, layerInx, branchInx i
 	}
 }
 
+func randomOffsetDistance(length float64) (float64, bool) {
+	if rng.Float64() < growEndThreshold {
+		return length, true
+	}
+
+	lower := length * nonEndMin
+	upper := length * nonEndMax
+	return lower + (upper-lower)*rng.Float64(), false
+}
+
 type Leaves struct {
 	window *Window
 	branch Point
-	opts     *Options
+	opts   *Options
 }
 
 func drawLeaves(w *Window, branchEnd Point, opts *Options) {

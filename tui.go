@@ -16,14 +16,8 @@ const (
 	layersField
 	trunkLengthField
 	angleField
-	leafLengthField
 	branchCharsField
 	leafCharsField
-	widthField
-	heightField
-	renderModeField
-	waitTimeField
-	fixedWindowField
 	startField
 )
 
@@ -38,30 +32,38 @@ var treeStyles = []string{
 var (
 	tuiTitleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("86"))
+			Foreground(lipgloss.Color("151"))
 	tuiSubtitleStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("245"))
+				Foreground(lipgloss.Color("244"))
 	tuiCardStyle = lipgloss.NewStyle().
+			Width(50).
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("61")).
-			Padding(0, 1)
+			BorderForeground(lipgloss.Color("65")).
+			Padding(1, 1)
 	tuiSectionStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("212"))
+			Foreground(lipgloss.Color("180"))
 	tuiLabelStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("252"))
 	tuiValueStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("121"))
+			Foreground(lipgloss.Color("151"))
 	tuiSelectedStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("230")).
-				Background(lipgloss.Color("61")).
-				Bold(true)
+				Background(lipgloss.Color("65")).
+				Bold(true).
+				Width(50)
+	tuiGrowStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("230")).
+			Background(lipgloss.Color("65")).
+			Bold(true).
+			Width(50).
+			Align(lipgloss.Center)
 	tuiHintStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("244"))
 	tuiErrorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("204"))
+			Foreground(lipgloss.Color("210"))
 	tuiTreeStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("114"))
+			Foreground(lipgloss.Color("107"))
 )
 
 type optionsTUIModel struct {
@@ -173,8 +175,7 @@ func (m optionsTUIModel) updateTextInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m optionsTUIModel) updateSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	key := msg.String()
-	switch key {
+	switch msg.String() {
 	case "ctrl+c", "q", "esc":
 		return m, tea.Quit
 	case "up", "k", "shift+tab":
@@ -218,27 +219,11 @@ func (m *optionsTUIModel) adjust(delta int) {
 	case angleField:
 		degrees := int(math.Round(m.options.AngleMean * 180 / math.Pi))
 		m.options.AngleMean = float64(clamp(degrees+delta, 5, 85)) * math.Pi / 180
-	case leafLengthField:
-		m.options.LeafLen = clamp(m.options.LeafLen+delta, 1, 10)
-	case widthField:
-		m.options.WindowWidth = clamp(m.options.WindowWidth+delta*2, 30, 160)
-	case heightField:
-		m.options.WindowHeight = clamp(m.options.WindowHeight+delta, 12, 60)
-	case renderModeField:
-		m.options.Instant = !m.options.Instant
-	case waitTimeField:
-		m.options.WaitTime = math.Round(clampFloat(m.options.WaitTime+float64(delta)*0.01, 0, 1)*100) / 100
-	case fixedWindowField:
-		m.options.FixedWindow = !m.options.FixedWindow
 	}
 }
 
 func clamp(value, lower, upper int) int {
 	return min(max(value, lower), upper)
-}
-
-func clampFloat(value, lower, upper float64) float64 {
-	return math.Min(math.Max(value, lower), upper)
 }
 
 func (m *optionsTUIModel) setTreeStyle(selection int) {
@@ -283,30 +268,10 @@ func (m optionsTUIModel) fieldValue(field int) string {
 		return fmt.Sprintf("%d", m.options.InitialLen)
 	case angleField:
 		return fmt.Sprintf("%d°", int(math.Round(m.options.AngleMean*180/math.Pi)))
-	case leafLengthField:
-		return fmt.Sprintf("%d", m.options.LeafLen)
 	case branchCharsField:
 		return fmt.Sprintf("%q", m.options.BranchChars)
 	case leafCharsField:
 		return fmt.Sprintf("%q", m.options.LeafChars)
-	case widthField:
-		return fmt.Sprintf("%d columns", m.options.WindowWidth)
-	case heightField:
-		return fmt.Sprintf("%d rows", m.options.WindowHeight)
-	case renderModeField:
-		if m.options.Instant {
-			return "Instant"
-		}
-		return "Animated"
-	case waitTimeField:
-		return fmt.Sprintf("%.2f seconds", m.options.WaitTime)
-	case fixedWindowField:
-		if m.options.FixedWindow {
-			return "Keep height fixed"
-		}
-		return "Expand when needed"
-	case startField:
-		return "Grow bonsai  →"
 	default:
 		return ""
 	}
@@ -318,176 +283,73 @@ func (m optionsTUIModel) fieldRow(field int, label string) string {
 		value = m.input + "▏"
 	}
 
-	row := tuiLabelStyle.Width(17).Render(label) + tuiValueStyle.Render(value)
+	row := tuiLabelStyle.Width(19).Render(label) + tuiValueStyle.Render(value)
 	if m.cursor == field {
-		return tuiSelectedStyle.Width(43).Render("› " + row)
+		return tuiSelectedStyle.Render("› " + row)
 	}
 	return "  " + row
 }
 
-func (m optionsTUIModel) settingsCard(title string, fields []struct {
-	field int
-	label string
-}) string {
-	rows := make([]string, 0, len(fields)+1)
-	rows = append(rows, tuiSectionStyle.Render(title))
-	for _, field := range fields {
-		rows = append(rows, m.fieldRow(field.field, field.label))
-	}
-	return tuiCardStyle.Render(strings.Join(rows, "\n"))
-}
-
-func (m optionsTUIModel) compactSettingsCard() string {
-	sections := []struct {
-		title  string
-		fields []struct {
-			field int
-			label string
-		}
-	}{
-		{
-			title: "TREE",
-			fields: []struct {
-				field int
-				label string
-			}{
-				{styleField, "Style"},
-				{layersField, "Branch layers"},
-				{trunkLengthField, "Trunk length"},
-				{angleField, "Branch angle"},
-				{leafLengthField, "Leaf size"},
-			},
-		},
-		{
-			title: "CHARACTER",
-			fields: []struct {
-				field int
-				label string
-			}{
-				{branchCharsField, "Branch glyphs"},
-				{leafCharsField, "Leaf glyphs"},
-			},
-		},
-		{
-			title: "CANVAS & MOTION",
-			fields: []struct {
-				field int
-				label string
-			}{
-				{widthField, "Canvas width"},
-				{heightField, "Canvas height"},
-				{renderModeField, "Render mode"},
-				{waitTimeField, "Draw delay"},
-				{fixedWindowField, "Overflow"},
-				{startField, ""},
-			},
-		},
-	}
-
-	rows := make([]string, 0, startField+4)
-	for _, section := range sections {
-		rows = append(rows, tuiSectionStyle.Render(section.title))
-		for _, field := range section.fields {
-			rows = append(rows, m.fieldRow(field.field, field.label))
-		}
-	}
-	return tuiCardStyle.Render(strings.Join(rows, "\n"))
-}
-
 func (m optionsTUIModel) View() string {
-	if m.width > 0 && m.width < 55 {
-		return "Your terminal is too narrow for the bonsai configurator. Please use at least 55 columns.\n"
+	if m.width > 0 && m.width < 58 {
+		return "Your terminal is too narrow for the bonsai configurator. Please use at least 58 columns.\n"
 	}
 
-	shape := []string{
-		"       .-&-.       ",
-		"     .- /|\\ -.     ",
-		"       / | \\       ",
-		"      /  |  \\      ",
-		"    .____|____.     ",
-		"     \\  bonsai /     ",
-	}
-
-	fullHeader := lipgloss.JoinHorizontal(
+	bonsai := tuiTreeStyle.Render(strings.Join([]string{
+		"    .-.-.  ",
+		"  .(  |  ).",
+		"     / \\   ",
+		"   .-===-. ",
+	}, "\n"))
+	header := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		tuiTreeStyle.Render(strings.Join(shape, "\n")),
+		bonsai,
 		"  ",
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			tuiTitleStyle.Render("GoBonsai · Shape a small world"),
-			tuiSubtitleStyle.Render("Tune your tree, then let it grow."),
+			tuiTitleStyle.Render("GoBonsai"),
+			tuiSubtitleStyle.Render("Give your tree a little character."),
 		),
 	)
 
-	compact := m.width < 110 || (m.height > 0 && m.height < 32)
-	if compact {
-		header := tuiTitleStyle.Render("GoBonsai") + tuiSubtitleStyle.Render("  ·  Shape a small world")
-		status := "↑/↓ navigate  •  ←/→ adjust  •  enter edit/select  •  r reset  •  q cancel"
-		if m.editing {
-			status = "Type characters  •  enter save  •  esc discard"
-		}
-		if m.error != "" {
-			if m.error == "Settings restored." {
-				status = tuiHintStyle.Render(m.error)
-			} else {
-				status = tuiErrorStyle.Render(m.error)
-			}
-		} else {
-			status = tuiHintStyle.Render(status)
-		}
-
-		return "\n" + header + "\n\n" + m.compactSettingsCard() + "\n\n" + status + "\n"
+	rows := []string{
+		header,
+		"",
+		tuiSectionStyle.Render("TREE SHAPE"),
+		m.fieldRow(styleField, "Tree style"),
+		m.fieldRow(layersField, "Branch layers"),
+		m.fieldRow(trunkLengthField, "Trunk length"),
+		m.fieldRow(angleField, "Branch angle"),
+		"",
+		tuiSectionStyle.Render("TEXTURE"),
+		m.fieldRow(branchCharsField, "Branch glyphs"),
+		m.fieldRow(leafCharsField, "Leaf glyphs"),
+		"",
+	}
+	if m.cursor == startField {
+		rows = append(rows, tuiGrowStyle.Render("✦  Grow bonsai  ✦"))
+	} else {
+		rows = append(rows, tuiHintStyle.Width(50).Align(lipgloss.Center).Render("Grow bonsai"))
 	}
 
-	treeCard := m.settingsCard("TREE", []struct {
-		field int
-		label string
-	}{
-		{styleField, "Style"},
-		{layersField, "Branch layers"},
-		{trunkLengthField, "Trunk length"},
-		{angleField, "Branch angle"},
-		{leafLengthField, "Leaf size"},
-	})
-
-	lookCard := m.settingsCard("CHARACTER", []struct {
-		field int
-		label string
-	}{
-		{branchCharsField, "Branch glyphs"},
-		{leafCharsField, "Leaf glyphs"},
-	})
-
-	canvasCard := m.settingsCard("CANVAS & MOTION", []struct {
-		field int
-		label string
-	}{
-		{widthField, "Canvas width"},
-		{heightField, "Canvas height"},
-		{renderModeField, "Render mode"},
-		{waitTimeField, "Draw delay"},
-		{fixedWindowField, "Overflow"},
-		{startField, ""},
-	})
-
-	var cards string
-	left := lipgloss.JoinVertical(lipgloss.Left, treeCard, lookCard)
-	cards = lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", canvasCard)
-
-	status := "↑/↓ navigate  •  ←/→ adjust  •  enter edit/select  •  r reset  •  q cancel"
+	status := "↑↓ move · ←→ tune · enter · r reset · q quit"
 	if m.editing {
-		status = "Type characters  •  enter save  •  esc discard"
+		status = "Type glyphs · enter save · esc discard"
 	}
 	if m.error != "" {
-		status = m.error
 		if m.error == "Settings restored." {
-			status = tuiHintStyle.Render(status)
+			status = tuiHintStyle.Render(m.error)
 		} else {
-			status = tuiErrorStyle.Render(status)
+			status = tuiErrorStyle.Render(m.error)
 		}
 	} else {
 		status = tuiHintStyle.Render(status)
 	}
+	rows = append(rows, "", status)
 
-	return "\n" + fullHeader + "\n\n" + cards + "\n\n" + status + "\n"
+	dialog := tuiCardStyle.Render(strings.Join(rows, "\n"))
+	if m.width == 0 || m.height == 0 {
+		return "\n" + dialog + "\n"
+	}
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, dialog)
 }

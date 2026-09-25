@@ -5,7 +5,7 @@ This project is greatly inspired by [PyBonsai](https://github.com/Ben-Edwards44/
 
 ## Usage
 
-Run without options in an interactive terminal to open the tree configurator. It supports keyboard selection, live values, editable branch and leaf characters, and a full set of drawing controls.
+Run without options in an interactive terminal to open the tree configurator. It keeps the essentials close at hand: style, size, density, branch angle, and the tree's branch and leaf characters. Use command-line flags for advanced drawing controls.
 
 ```
 gobonsai

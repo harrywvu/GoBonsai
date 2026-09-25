@@ -247,7 +247,7 @@ func setSeed(options *Options, seed int) {
 }
 
 func showHelp() {
-	fmt.Printf("USEAGE gobonsai [OPTION]...\n\n")
+	fmt.Printf("USAGE gobonsai [OPTION]...\n\n")
 	fmt.Println(desc)
 	fmt.Println(optionDescs())
 	os.Exit(0)
@@ -258,6 +258,7 @@ func optionDescs() string {
 OPTIONS:
     -h, --help            display help
         --version         display version
+        --tui             open the interactive tree configurator
 
     -s, --seed            seed for the random number generator
 

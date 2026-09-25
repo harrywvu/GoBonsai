@@ -5,6 +5,14 @@ This project is greatly inspired by [PyBonsai](https://github.com/Ben-Edwards44/
 
 ## Usage
 
+Run without options in an interactive terminal to open the tree configurator. It supports keyboard selection, live values, editable branch and leaf characters, and a full set of drawing controls.
+
+```
+gobonsai
+```
+
+Use `--tui` to open the configurator while starting from any supplied flags, for example `gobonsai --tui --layers 10 --type 1`. The command-line interface remains available for scripts and piped output.
+
 ```
 gobonsai [OPTION]...
 
@@ -13,6 +21,7 @@ GoBonsai procedurally generates ASCII art trees in your terminal.
 OPTIONS:
     -h, --help            display help
         --version         display version
+        --tui             open the interactive tree configurator
 
     -s, --seed            seed for the random number generator
 

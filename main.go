@@ -1,13 +1,53 @@
 package main
 
 import (
+	"fmt"
 	"os"
 )
 
 func main() {
 	args := os.Args[1:]
-	options := getOptions(args)
 
+	if hasTUIArg(args) && hasHelpOrVersionArg(args) {
+		getOptions(withoutTUIArg(args))
+		return
+	}
+
+	if shouldUseOptionsTUI(args) {
+		if !isInteractiveTerminal() {
+			fmt.Fprintln(os.Stderr, "--tui requires an interactive terminal")
+			os.Exit(1)
+		}
+
+		options := getOptions(withoutTUIArg(args))
+		var ok bool
+		var err error
+		options, ok, err = runOptionsTUI(options)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not start the options interface: %v\n", err)
+			os.Exit(1)
+		}
+		if !ok {
+			return
+		}
+
+		drawTree(options)
+		return
+	}
+
+	drawTree(getOptions(args))
+}
+
+func hasHelpOrVersionArg(args []string) bool {
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" || arg == "--version" {
+			return true
+		}
+	}
+	return false
+}
+
+func drawTree(options *Options) {
 	w := NewWindow(options.WindowWidth, options.WindowHeight, options)
 	root := treeRoot(options)
 
